@@ -1,0 +1,383 @@
+import React, { useState } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { Settings, AlertTriangle, CheckCircle, Clock, Zap, TrendingUp, ArrowLeft, Play, Pause, Square } from 'lucide-react';
+
+const OEEDashboard = () => {
+  const [selectedMachine, setSelectedMachine] = useState(null);
+  const [timeRange, setTimeRange] = useState('today');
+
+  // Sample machine data
+  const machines = [
+    { id: 'M001', name: 'CNC Machine 1', oee: 85, availability: 92, performance: 88, quality: 95, status: 'running', stoppage: null },
+    { id: 'M002', name: 'CNC Machine 2', oee: 78, availability: 85, performance: 82, quality: 98, status: 'running', stoppage: null },
+    { id: 'M003', name: 'Press Machine 1', oee: 45, availability: 65, performance: 70, quality: 99, status: 'stopped', stoppage: 'Material Shortage' },
+    { id: 'M004', name: 'Press Machine 2', oee: 92, availability: 96, performance: 94, quality: 96, status: 'running', stoppage: null },
+    { id: 'M005', name: 'Lathe Machine 1', oee: 67, availability: 78, performance: 85, quality: 92, status: 'maintenance', stoppage: 'Planned Maintenance' },
+    { id: 'M006', name: 'Lathe Machine 2', oee: 88, availability: 91, performance: 93, quality: 95, status: 'running', stoppage: null },
+    { id: 'M007', name: 'Milling Machine 1', oee: 72, availability: 82, performance: 88, quality: 99, status: 'running', stoppage: null },
+    { id: 'M008', name: 'Milling Machine 2', oee: 35, availability: 45, performance: 78, quality: 99, status: 'stopped', stoppage: 'Equipment Failure' },
+    { id: 'M009', name: 'Grinder 1', oee: 81, availability: 87, performance: 91, quality: 97, status: 'running', stoppage: null },
+    { id: 'M010', name: 'Grinder 2', oee: 76, availability: 84, performance: 89, quality: 93, status: 'running', stoppage: null },
+    { id: 'M011', name: 'Drill Press 1', oee: 89, availability: 94, performance: 92, quality: 97, status: 'running', stoppage: null },
+    { id: 'M012', name: 'Drill Press 2', oee: 58, availability: 68, performance: 82, quality: 96, status: 'idle', stoppage: 'Operator Break' },
+    { id: 'M013', name: 'Welding Station 1', oee: 73, availability: 81, performance: 87, quality: 98, status: 'running', stoppage: null },
+    { id: 'M014', name: 'Welding Station 2', oee: 84, availability: 89, performance: 91, quality: 97, status: 'running', stoppage: null },
+    { id: 'M015', name: 'Assembly Line 1', oee: 91, availability: 95, performance: 94, quality: 98, status: 'running', stoppage: null },
+    { id: 'M016', name: 'Assembly Line 2', oee: 79, availability: 86, performance: 88, quality: 95, status: 'running', stoppage: null },
+    { id: 'M017', name: 'Packaging Unit 1', oee: 66, availability: 75, performance: 84, quality: 99, status: 'setup', stoppage: 'Product Changeover' },
+    { id: 'M018', name: 'Packaging Unit 2', oee: 87, availability: 92, performance: 93, quality: 97, status: 'running', stoppage: null },
+    { id: 'M019', name: 'Quality Control 1', oee: 83, availability: 88, performance: 91, quality: 96, status: 'running', stoppage: null },
+    { id: 'M020', name: 'Quality Control 2', oee: 71, availability: 79, performance: 86, quality: 98, status: 'running', stoppage: null }
+  ];
+
+  // Sample stoppage history data
+  const stoppageHistory = [
+    { time: '08:30', duration: 15, reason: 'Tool Change', type: 'planned' },
+    { time: '10:45', duration: 8, reason: 'Material Shortage', type: 'unplanned' },
+    { time: '14:20', duration: 25, reason: 'Equipment Failure', type: 'unplanned' },
+    { time: '16:15', duration: 12, reason: 'Quality Check', type: 'planned' }
+  ];
+
+  // OEE trend data
+  const oeeHistory = [
+    { hour: '00:00', oee: 82 },
+    { hour: '02:00', oee: 85 },
+    { hour: '04:00', oee: 78 },
+    { hour: '06:00', oee: 88 },
+    { hour: '08:00', oee: 91 },
+    { hour: '10:00', oee: 75 },
+    { hour: '12:00', oee: 89 },
+    { hour: '14:00', oee: 67 },
+    { hour: '16:00', oee: 84 },
+    { hour: '18:00', oee: 92 }
+  ];
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'running': return 'bg-green-500';
+      case 'stopped': return 'bg-red-500';
+      case 'maintenance': return 'bg-yellow-500';
+      case 'idle': return 'bg-gray-500';
+      case 'setup': return 'bg-blue-500';
+      default: return 'bg-gray-400';
+    }
+  };
+
+  const getOEEColor = (oee) => {
+    if (oee >= 85) return 'text-green-600 bg-green-50 border-green-200';
+    if (oee >= 70) return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+    return 'text-red-600 bg-red-50 border-red-200';
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'running': return <Play className="w-4 h-4" />;
+      case 'stopped': return <Square className="w-4 h-4" />;
+      case 'maintenance': return <Settings className="w-4 h-4" />;
+      case 'idle': return <Pause className="w-4 h-4" />;
+      case 'setup': return <Settings className="w-4 h-4" />;
+      default: return <Pause className="w-4 h-4" />;
+    }
+  };
+
+  const avgOEE = Math.round(machines.reduce((sum, machine) => sum + machine.oee, 0) / machines.length);
+  const runningMachines = machines.filter(m => m.status === 'running').length;
+  const stoppedMachines = machines.filter(m => m.status === 'stopped').length;
+
+  if (selectedMachine) {
+    const machine = machines.find(m => m.id === selectedMachine);
+    
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center">
+              <button
+                onClick={() => setSelectedMachine(null)}
+                className="mr-4 p-2 rounded-lg bg-white border hover:bg-gray-50"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">{machine.name}</h1>
+                <p className="text-gray-600 mt-1">Machine ID: {machine.id}</p>
+              </div>
+            </div>
+            <div className={`px-4 py-2 rounded-lg flex items-center space-x-2 ${getStatusColor(machine.status)} text-white`}>
+              {getStatusIcon(machine.status)}
+              <span className="font-medium capitalize">{machine.status}</span>
+            </div>
+          </div>
+
+          {/* OEE Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className={`p-6 rounded-lg border-2 ${getOEEColor(machine.oee)}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium opacity-75">Overall OEE</p>
+                  <p className="text-3xl font-bold mt-1">{machine.oee}%</p>
+                </div>
+                <TrendingUp className="w-8 h-8 opacity-75" />
+              </div>
+            </div>
+            
+            <div className="bg-white p-6 rounded-lg border">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Availability</p>
+                  <p className="text-2xl font-bold text-blue-600 mt-1">{machine.availability}%</p>
+                </div>
+                <Clock className="w-6 h-6 text-blue-600" />
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+                <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${machine.availability}%` }}></div>
+              </div>
+            </div>
+            
+            <div className="bg-white p-6 rounded-lg border">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Performance</p>
+                  <p className="text-2xl font-bold text-purple-600 mt-1">{machine.performance}%</p>
+                </div>
+                <Zap className="w-6 h-6 text-purple-600" />
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+                <div className="bg-purple-600 h-2 rounded-full" style={{ width: `${machine.performance}%` }}></div>
+              </div>
+            </div>
+            
+            <div className="bg-white p-6 rounded-lg border">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Quality</p>
+                  <p className="text-2xl font-bold text-green-600 mt-1">{machine.quality}%</p>
+                </div>
+                <CheckCircle className="w-6 h-6 text-green-600" />
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 mt-3">
+                <div className="bg-green-600 h-2 rounded-full" style={{ width: `${machine.quality}%` }}></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Current Stoppage Alert */}
+          {machine.stoppage && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8">
+              <div className="flex items-center">
+                <AlertTriangle className="w-5 h-5 text-red-500 mr-3" />
+                <div>
+                  <h3 className="text-sm font-medium text-red-800">Current Stoppage</h3>
+                  <p className="text-sm text-red-700 mt-1">{machine.stoppage}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Charts Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* OEE Trend */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">OEE Trend (Last 24 Hours)</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={oeeHistory}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="hour" stroke="#888" />
+                  <YAxis stroke="#888" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#fff',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Line type="monotone" dataKey="oee" stroke="#3B82F6" strokeWidth={3} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* OEE Components Breakdown */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">OEE Components</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={[{
+                  name: 'OEE Breakdown',
+                  Availability: machine.availability,
+                  Performance: machine.performance,
+                  Quality: machine.quality
+                }]}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="name" stroke="#888" />
+                  <YAxis stroke="#888" />
+                  <Tooltip />
+                  <Bar dataKey="Availability" fill="#3B82F6" />
+                  <Bar dataKey="Performance" fill="#8B5CF6" />
+                  <Bar dataKey="Quality" fill="#10B981" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Stoppage History */}
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6">Stoppage History (Today)</h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">Time</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">Duration (min)</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">Reason</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">Type</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stoppageHistory.map((stoppage, index) => (
+                    <tr key={index} className="border-b">
+                      <td className="py-3 px-4 text-gray-900">{stoppage.time}</td>
+                      <td className="py-3 px-4 text-gray-900">{stoppage.duration}</td>
+                      <td className="py-3 px-4 text-gray-900">{stoppage.reason}</td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          stoppage.type === 'planned' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {stoppage.type}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">OEE Dashboard</h1>
+            <p className="text-gray-600 mt-1">Overall Equipment Effectiveness - Manufacturing Plant</p>
+          </div>
+          <div className="flex space-x-2">
+            {['today', '7d', '30d'].map((period) => (
+              <button
+                key={period}
+                onClick={() => setTimeRange(period)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  timeRange === period
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50 border'
+                }`}
+              >
+                {period === 'today' ? 'Today' : period}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Average OEE</p>
+                <p className="text-3xl font-bold text-blue-600 mt-1">{avgOEE}%</p>
+              </div>
+              <TrendingUp className="w-8 h-8 text-blue-600" />
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Running Machines</p>
+                <p className="text-3xl font-bold text-green-600 mt-1">{runningMachines}</p>
+              </div>
+              <Play className="w-8 h-8 text-green-600" />
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Stopped Machines</p>
+                <p className="text-3xl font-bold text-red-600 mt-1">{stoppedMachines}</p>
+              </div>
+              <Square className="w-8 h-8 text-red-600" />
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Total Machines</p>
+                <p className="text-3xl font-bold text-gray-900 mt-1">{machines.length}</p>
+              </div>
+              <Settings className="w-8 h-8 text-gray-600" />
+            </div>
+          </div>
+        </div>
+
+        {/* Machine Grid */}
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">Machine Status Overview</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {machines.map((machine) => (
+              <div
+                key={machine.id}
+                onClick={() => setSelectedMachine(machine.id)}
+                className={`p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${getOEEColor(machine.oee)} aspect-[3/2] flex flex-col justify-between`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-bold">{machine.id}</span>
+                  <div className={`w-3 h-3 rounded-full ${getStatusColor(machine.status)}`}></div>
+                </div>
+                
+                <div className="flex-1 flex flex-col justify-center">
+                  <h4 className="font-semibold text-sm mb-3 text-center" title={machine.name}>
+                    {machine.name}
+                  </h4>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm opacity-75">OEE</span>
+                      <span className="text-lg font-bold">{machine.oee}%</span>
+                    </div>
+                    
+                    <div className="w-full bg-white bg-opacity-50 rounded-full h-2">
+                      <div 
+                        className="h-2 rounded-full transition-all"
+                        style={{ 
+                          width: `${machine.oee}%`,
+                          backgroundColor: machine.oee >= 85 ? '#10B981' : machine.oee >= 70 ? '#F59E0B' : '#EF4444'
+                        }}
+                      ></div>
+                    </div>
+                    
+                    {machine.stoppage && (
+                      <div className="flex items-start mt-2">
+                        <AlertTriangle className="w-3 h-3 text-red-500 mr-1 mt-0.5 flex-shrink-0" />
+                        <span className="text-xs text-red-700 leading-tight">{machine.stoppage}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default OEEDashboard;
